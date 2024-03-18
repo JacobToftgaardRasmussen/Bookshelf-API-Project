@@ -1,43 +1,41 @@
 import express, { Request, Response } from "express"
+import dbService from "./dbService"
 
 const app = express()
 app.use(express.json())
 
 const port = 3000
 
-const books = [
-  { title: "A very good book", author: "Bob Alisson", published: true },
-  { title: "Another book", author: "Jim Jimmyson", published: false },
-]
-
-app.get("/books", (req: Request, res: Response) => {
+app.get("/books", async (req: Request, res: Response) => {
+  const books = await dbService.getBooks()
   res.status(200).json(books)
 })
 
-app.get("/books/:id", (req: Request, res: Response) => {
+app.get("/books/:id", async (req: Request, res: Response) => {
   const { id } = req.params
-  const foundBook = books[Number(id)]
+  const foundBook = await dbService.getBookById(Number(id))
   res.status(200).json(foundBook)
 })
 
-app.post("/books", (req: Request, res: Response) => {
+app.post("/books", async (req: Request, res: Response) => {
   const { title, author, published } = req.body
-  books.push({ title, author, published })
+  await dbService.insertBook({ title, author, published })
+  const books = await dbService.getBooks()
   res.status(201).json(books)
 })
 
-app.put("/books/:id", (req: Request, res: Response) => {
+app.put("/books/:id", async (req: Request, res: Response) => {
   const { title, author, published } = req.body
   const { id } = req.params
   const updatedBook = { title, author, published }
-  books[Number(id)] = updatedBook
-  res.status(200).json(books)
+  const result = await dbService.updateBookById(Number(id), updatedBook)
+  res.status(200).json(result)
 })
 
 app.delete("/books/:id", (req: Request, res: Response) => {
   const { id } = req.params
-  books.splice(Number(id), 1)
-  res.status(200).json(books)
+  dbService.deleteBook(Number(id))
+  res.sendStatus(200)
 })
 
 app.listen(port, () => {
