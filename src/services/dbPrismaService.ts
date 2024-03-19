@@ -1,4 +1,6 @@
 import { Book, PrismaClient } from "@prisma/client"
+import { z } from "zod"
+import { CreateBookSchema, UpdateBookSchema } from "../zodSchema"
 
 class DBPrismaService {
   private prisma = new PrismaClient()
@@ -13,11 +15,9 @@ class DBPrismaService {
     }
   }
 
-  public async insertBook(book: {
-    title: string
-    author: string
-    published: boolean
-  }): Promise<Book> {
+  public async insertBook(
+    book: z.infer<typeof CreateBookSchema>
+  ): Promise<Book> {
     try {
       const createdBook = await this.prisma.book.create({ data: book })
       return createdBook
@@ -43,16 +43,12 @@ class DBPrismaService {
 
   public async updateBookById(
     id: number,
-    book: {
-      title: string | undefined
-      author: string | undefined
-      published: boolean | undefined
-    }
+    bookUpdate: z.infer<typeof UpdateBookSchema>
   ): Promise<Book> {
     try {
       const data = new Map()
-      Object.keys(book).forEach((key) => {
-        const value = book[key as keyof typeof book]
+      Object.keys(bookUpdate).forEach((key) => {
+        const value = bookUpdate[key as keyof typeof bookUpdate]
         if (value) {
           data.set(key, value)
         }

@@ -1,6 +1,7 @@
 import { Request, Response } from "express"
 import dbPrismaService from "../services/dbPrismaService"
 import errorHandler from "../services/errorHandler"
+import { CreateBookSchema, UpdateBookSchema } from "../zodSchema"
 
 class BookController {
   public async getBooks(req: Request, res: Response) {
@@ -25,33 +26,37 @@ class BookController {
   }
 
   public async insertBook(req: Request, res: Response) {
-    const { title, author, published } = req.body
-    try {
-      const newBook = await dbPrismaService.insertBook({
-        title,
-        author,
-        published,
-      })
-      res.status(201).json(newBook)
-    } catch (error: unknown) {
-      const { status, message } = errorHandler.handleError(error)
-      res.status(status).send(message)
+    const book = CreateBookSchema.safeParse(req.body)
+    if (book.success) {
+      try {
+        const newBook = await dbPrismaService.insertBook(book.data)
+        res.status(201).json(newBook)
+      } catch (error: unknown) {
+        const { status, message } = errorHandler.handleError(error)
+        res.status(status).send(message)
+      }
+    } else {
+      res.status(400).json(book.error)
     }
   }
 
   public async updateBookById(req: Request, res: Response) {
-    const { title, author, published } = req.body
-    const { id } = req.params
-    const updatedBook = { title, author, published }
-    try {
-      const result = await dbPrismaService.updateBookById(
-        Number(id),
-        updatedBook
-      )
-      res.status(200).json(result)
-    } catch (error: unknown) {
-      const { status, message } = errorHandler.handleError(error)
-      res.status(status).send(message)
+    const bookUpdate = UpdateBookSchema.safeParse(req.body)
+    if (bookUpdate.success) {
+      try {
+        const { id } = req.params
+        const idAsNumber = Number(id)
+        const result = await dbPrismaService.updateBookById(
+          idAsNumber,
+          bookUpdate.data
+        )
+        res.status(200).json(result)
+      } catch (error: unknown) {
+        const { status, message } = errorHandler.handleError(error)
+        res.status(status).send(message)
+      }
+    } else {
+      res.status(400).json(bookUpdate.error.name)
     }
   }
 
